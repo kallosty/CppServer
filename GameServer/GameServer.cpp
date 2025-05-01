@@ -1,42 +1,52 @@
 ﻿#include "pch.h"
 #include <iostream>
 #include "CorePch.h"
-
 #include <thread>
+#include <atomic>
 
-//thread Practice
+//실습2
 
-void HelloThread()
+// atomic : All-Or-Nothing
+
+//DB - 거래했을 때
+//A라는 유저 인벤에서 집행검 빼고
+//B라는 유저 인벤에 집행검을 추가
+//크래시 났을 때 A라는 유저 인벤에서 집행검만 빼질 수 있음
+// 그래서 atomic 연산으로.. 최소단위로 계산해야함
+
+std::atomic<int32> sum = 0;
+//아토믹 연산은 매우 느리므로 막 사용하면 안 된다. -> 공유 데이터를 건드리는 실습
+
+void Add()
 {
-    cout << "HelloThread\n";
+    for (int32 i = 0; i < 1'000'000; i++)
+    {
+        sum.fetch_add(1);
+        //sum++;
+    }
 }
 
-void HelloTrhead_2(int32 n)
+void Sub()
 {
-    cout << "HelloThread_2 " << n <<"\n";
+    for (int32 i = 0; i < 1'000'000; i++)
+    {
+        sum.fetch_sub(1);
+        //sum--;
+    }
 }
 
 int main()
 {
-    //리눅스 서버와 윈도우 서버를 동시에 구축할 수 있게 항상 생각해보면서..
-    std::thread t(HelloThread);
+    Add();
+    Sub();
 
+    cout << sum << endl;
 
-    ////Thread 에서 많이쓰이는 함수들
-    t.join(); //쓰레드가 끝날 때까지 대기
-    //t.joinable(); //쓰레드가 살아있는 지 확인
-    //t.detach(); //쓰레드 끊기?
-    //int32 core = t.hardware_concurrency(); //코어 갯수 확인
-    //auto t_id = t.get_id(); //쓰레드 마다의 id 가져오기
+    std::thread t1(Add);
+    std::thread t2(Sub);
 
-    //벡터 활용
-    vector<std::thread> v;
-    v.resize(10);
-    for (int i = 0; i < 10; i++) {
-        v[i] = std::thread(HelloTrhead_2, i);
-    }
+    t1.join();
+    t2.join();
 
-    for (int i = 0; i < 10; i++) {
-        if (v[i].joinable()) v[i].join();
-    }
+    cout << sum << endl;
 }
