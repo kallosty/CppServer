@@ -7,56 +7,62 @@
 #include <windows.h> //for Event Lock
 #include <chrono>
 
-
 mutex m;
 queue<int32> q;
 HANDLE handle;
 
+// 참고) CV는 User_Level Object (커널 오브젝트 X)
+condition_variable cv; //표준 mutex와 짝지어 행동
+
 void Producer()
 {
     while (true) {
+
+        // 1) Lock 을 잡고
+        // 2) 공유 변수 값을 수정
+        // 3) Lock을 풀고
+        // 4) 조건 변수 통해 다른 쓰레드에게 통지
+
         {
             unique_lock<mutex> lcok(m);
             q.push(100);
         }
 
-        ::SetEvent(handle); //이벤트를 signal 상태로 바꿔주세요.
+        cv.notify_one(); // wait 중인 쓰레드가 있으면 딱 1개를 깨운다.
 
-        this_thread::sleep_for(100ms);
+        //this_thread::sleep_for(100ms);
     }
 }
 
 void Consumer()
 {
     while (true) {
-        ::WaitForSingleObject(handle, INFINITE); //handle 시그널 상태를 확인
-        //::ResetEvent(handle); -> Manual, bManaulReset 쪽이 true이면 설정해줘야 함
-        //Non-Signal
 
         unique_lock<mutex> lock(m);
-        if (q.empty() == false) {
+        cv.wait(lock, []() {return q.empty() == false; });
+        // 1) Lock을 잡고
+        // 2) 조건 확인
+        // - 만족 O => 빠져 나와서 이어서 코드를 진행
+        // - 만족 X => Lock을 풀어주고 대기 상태
+
+        // 그런데 notify_one을 했으면 항상 조건식을 만족하는거 아닐까?
+        // Spurious Wakeup(가짜 기상?)
+        // notify_one할 때 lock을 잡고 있는 것이 아니기 때문..
+
+        //while (q.empty() == false) 
+        {
             int32 data = q.front();
             q.pop();
-            cout << data << endl;
+            cout << q.size() << endl;
         }
     }
 }
 
 int main()
 {
-    //HANDLE은 식별자
-    //커널 오브젝트 - 프로세스나 이러한 핸들 오브젝트들, 커널에서 관리하는 또는 할당되는 오브젝트들..
-    //Usage Count
-    //Signal (green light) / Non-Signal (red light) << bool
-    //Auto / Manual << bool
-
-    handle = ::CreateEvent(NULL/*보안속성*/, FALSE/*bManualReset*/, FALSE/*bInitialState*/, NULL);
-
     thread t1(Producer);
     thread t2(Consumer);
 
     t1.join();
     t2.join();
-
-    ::CloseHandle(handle); //해제해주는 것
 }
