@@ -3,50 +3,70 @@
 #include "CorePch.h"
 #include <thread>
 #include <atomic>
+#include <mutex>
 
-//실습2
+vector<int32> v;
+//기본적으로 STL 라이브러리는 thread에서 문제가 있다고 가정하고 시작해야 함
 
-// atomic : All-Or-Nothing
+// Mutual Exclusive(상호 배타적)
+mutex m;
 
-//DB - 거래했을 때
-//A라는 유저 인벤에서 집행검 빼고
-//B라는 유저 인벤에 집행검을 추가
-//크래시 났을 때 A라는 유저 인벤에서 집행검만 빼질 수 있음
-// 그래서 atomic 연산으로.. 최소단위로 계산해야함
 
-std::atomic<int32> sum = 0;
-//아토믹 연산은 매우 느리므로 막 사용하면 안 된다. -> 공유 데이터를 건드리는 실습
-
-void Add()
+//RAII (Resource Acquisition is Initialization)
+template<typename T>
+class LockGuard
 {
-    for (int32 i = 0; i < 1'000'000; i++)
+public:
+    LockGuard(T& m)
     {
-        sum.fetch_add(1);
-        //sum++;
+        this->_mutex = &m;
+        _mutex->lock();
     }
-}
 
-void Sub()
-{
-    for (int32 i = 0; i < 1'000'000; i++)
+    ~LockGuard()
     {
-        sum.fetch_sub(1);
-        //sum--;
+        _mutex->unlock();
+    }
+
+private:
+    T* _mutex;
+};
+
+void Push()
+{
+    for (int32 i = 0; i < 10000; i++)
+    {
+        //객체가 삭제될때 자동으로 락을 해제해줌
+        //LockGuard<std::mutex> lockGuard(m);
+
+        std::lock_guard<std::mutex> lockGuard(m);
+        //std::unique_lock<std::mutex> uniqueLock(m, std::defer_lock); //좀 더 변수를 입력받아 락을 걸어줌
+        //uniqueLock.lock();
+
+
+        //자물쇠 잠그기
+        //m.lock();
+
+        v.push_back(i);
+
+        if (i == 5000)
+        {
+            //m.unlock();
+            break;
+        }
+
+        //자물쇠 풀기
+        //m.unlock();
     }
 }
 
 int main()
 {
-    Add();
-    Sub();
-
-    cout << sum << endl;
-
-    std::thread t1(Add);
-    std::thread t2(Sub);
+    std::thread t1(Push);
+    std::thread t2(Push);
 
     t1.join();
     t2.join();
 
-    cout << sum << endl;
+    cout << v.size() << endl;
 }
