@@ -4,93 +4,59 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <windows.h> //for Event Lock
 #include <chrono>
-
-using namespace std::chrono_literals;
-//Spin Lock
-
-class SpinLock
-{
-public:
-    void lock()
-    {
-        //CAS (Compare-Add-Swap)
-
-        bool expected = false;
-        bool desired = true;
-
-        ////CAS 의사 코드 : _locked.compare_exchange_strong(expected, desired);
-        //if (_locked == expected)
-        //{
-        //    expected = _locked;
-        //    _locked = desired;
-        //    return true;
-        //}
-        //else {
-        //    expected = _locked;
-        //    return false;
-        //}
-
-        while (_locked.compare_exchange_strong(expected, desired) == false) //Spin Lock
-        {
-            expected = false;
-
-            //Sleep
-            //this_thread::sleep_for(std::chrono::milliseconds(100)); //언제까지 자고 있어라. 실행 시간을 변수로
-            //this_thread::yield(); //양보한다. -> 커널모드로 넘어가라
-            
-            this_thread::sleep_for(0ms); // 0ms 하기 위해서 include <chrono> 와 using namespace std::chrono_literals; 가 필요
-        }
-
-        /*while (_locked)
-        {
-
-        }
-
-        _locked = true;*/
-    }
-
-    void unlock()
-    {
-        //_locked = false;
-        _locked.store(false);
-    }
-
-private:
-    atomic<bool> _locked = false;
-    //volatile c++ : 컴파일러에게 최적화를 하지 말라달라고 요청
-};
 
 
 mutex m;
-int32 sum = 0;
-SpinLock spinLock;
+queue<int32> q;
+HANDLE handle;
 
-void Add()
+void Producer()
 {
-    for (int32 i = 0; i < 100'000; i++)
-    {
-        lock_guard<SpinLock> gaurd(spinLock);
-        sum++;
+    while (true) {
+        {
+            unique_lock<mutex> lcok(m);
+            q.push(100);
+        }
+
+        ::SetEvent(handle); //이벤트를 signal 상태로 바꿔주세요.
+
+        this_thread::sleep_for(100ms);
     }
 }
 
-void Sub()
+void Consumer()
 {
-    for (int32 i = 0; i < 100'000; i++)
-    {
-        lock_guard<SpinLock> gaurd(spinLock); 
-        sum--;
+    while (true) {
+        ::WaitForSingleObject(handle, INFINITE); //handle 시그널 상태를 확인
+        //::ResetEvent(handle); -> Manual, bManaulReset 쪽이 true이면 설정해줘야 함
+        //Non-Signal
+
+        unique_lock<mutex> lock(m);
+        if (q.empty() == false) {
+            int32 data = q.front();
+            q.pop();
+            cout << data << endl;
+        }
     }
 }
 
 int main()
 {
-    thread t1(Add);
-    thread t2(Sub);
+    //HANDLE은 식별자
+    //커널 오브젝트 - 프로세스나 이러한 핸들 오브젝트들, 커널에서 관리하는 또는 할당되는 오브젝트들..
+    //Usage Count
+    //Signal (green light) / Non-Signal (red light) << bool
+    //Auto / Manual << bool
+
+    handle = ::CreateEvent(NULL/*보안속성*/, FALSE/*bManualReset*/, FALSE/*bInitialState*/, NULL);
+
+    thread t1(Producer);
+    thread t2(Consumer);
 
     t1.join();
     t2.join();
 
-    cout << sum << endl;
+    ::CloseHandle(handle); //해제해주는 것
 }
