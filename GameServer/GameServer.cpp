@@ -4,99 +4,101 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
-#include <windows.h> //for Event Lock
+#include <windows.h>
 #include <chrono>
 #include <future>
 
-int64 result;
+//atomic<bool> flag;
 
-int64 Calculate()
+atomic<bool> ready;
+int32 value;
+
+void Producer()
 {
-    int64 sum = 0;
+    value = 10;
 
-    for (int32 i = 0; i < 100'000; i++)
-    {
-        sum += i;
-    }
-
-    return sum;
+    ready.store(true, memory_order::memory_order_release);
 }
 
-void PromiseWorker(std::promise<string>&& promise)
+void Consumer()
 {
-    promise.set_value("Secret Message");
-}
+    while (ready.load(memory_order::memory_order_acquire) == false)
+        ;
 
-void TaskWorker(std::packaged_task<int64(void)>&& task) 
-{
-    task();
+    cout << value << endl;
 }
 
 int main()
 {
-    // 동기 (synchronous) 실행
-    int64 sum = Calculate();
-    cout << sum << endl;
+    ready = false;
+    value = 0;
+    thread t1(Producer);
+    thread t2(Consumer);
 
-    {
-        //1) deferred : lazy evalution 지연해서 실행하세요
-        //2) async : 별도의 쓰레드를 만들어서 실행하세요
-        //3) deferred | async : 둘 중 알아서 골라주세요
+    t1.join();
+    t2.join();
+    
 
-        // 언젠가 미래에 결과물을 뱉어줄거야!
-        std::future<int64> future = std::async(std::launch::async, Calculate);
+    // Memory Model (정책)
+    // 1) Sequentially Consistent(seq_cst)
+    // 2) Acquire-Release(acquire, release)
+    // 3) Relaxed (relaxed)
 
-        // TODO
+    // 1) seq_cst(가장 엄격 = 컴파일러 최적화 여지 적음 = 직관적)
+    // 2) acquire-release
+    // 3) relaxed (자유롭다 = 컴파일러 최적화 여지 많음 = 직관적이지 않음)
+    
+    // 1) seq_cst 이것의 경우 가시성, 코드 재배치성에 대해서 해결이 가능하다.
 
-        int64 sum = future.get(); //결과물이 이제서야 필요하다!
+    // 2) 의 경우 딱중간!
+    // release 명령 이전의 메모리 명령들이, 해당 명령 이후로 재배치 되는 것을 금지 -> 절취선을 두고 경계선을 나누는 느낌
+    // 그리고 acquire로 같은 변수를 읽는 쓰레드가 있다면 release 이전 명령들이 -> acquire 하는 순간에 관찰 가능 (가시성 보장)
 
-        /*class Knight
-        {
-        public:
-            int64 GetHp() { return 100; }
-        };
+    // 3) 의 경우 너무나도 자유롭다!
+    // 코드 재배치도 멋대로 가능! 가시성 해결 NO!
+    // 가장 기본 조건 (동일 객체에 대한 동일 관전 순서만 보장)
 
-        Knight knight;
+    // 인텔, AMD 는 기본적으로 seq_cst로 되어있기 때문에 생략해도 문제가 되지 않는다.
+}
 
-        std::future<int64> future2 = std::async(std::launch::async, &Knight::GetHp, knight);*/
-    }
+void Memo() {
+    /*Memo 1
+    //flag = false;
+    //flag.store(true, memory_order::memory_order_seq_cst);
+    //bool val = flag.load(memory_order::memory_order_seq_cst);
 
-    //std::promise
-    {
-        // 미래(std::future)에 결과물을 반환해줄꺼라 약속(std::promise) 해줘~ (계약서)
-        std::promise<string> promise; //전역 변수 설정보다 promise로 함수로 만들어서 future로 가져오는 것이 좋음
-        std::future<string> future = promise.get_future();
+    ////이전 flag 값을 prev 에 넣고, flag 값을 수정
+    //{
+    //    bool prev = flag.exchange(true); //한번에 실행. 아토믹
 
-        thread t(PromiseWorker, std::move(promise));
+    //    /*bool prev = flag;
+    //    flag = true;*/
+    //}
 
-        string message = future.get();
+    ////CAS(Compare-And-Swap) 조건부 수정
+    //{
+    //    bool expected = false;
+    //    bool desired = true;
 
-        cout << message << endl;
+    //    flag.compare_exchange_strong(expected,desired);
+    //    //위의 의사코드로 아래와 같음. 이게 한 번에 실행됨.
+    //    // Spurious Failure
+    //    /*if (flag == expected)
+    //    {
+    //        //다른 쓰레드의 interruption을 받아서 중간에 실패할 수 있음
+    //        //if(묘한 상황) return false; //하드웨어나 로직에 따라서 이렇게 실패했으면 weak로 나오고,
+    //                                        //strong은 될때까지 기다림
+    //        flag = desired;
+    //        return true;
+    //    }
+    //    else {
+    //        expected = flag;
+    //        return false;
+    //    }*/
 
-        t.join();
-    }
-
-    //std::packaged_task
-    {
-        std::packaged_task<int64(void)> task(Calculate);
-        std::future<int64> future = task.get_future();
-
-        std::thread t(TaskWorker, std::move(task));
-        int64 sum = future.get(); // future.get()을 얻어오면 future은 null 객체가 됨.
-
-        cout << sum << endl;
-
-        t.join();
-    }
-
-    // 결론)
-    // mutex, condition_variable 까지 가지 않고 단순한 애들을 처리할 수 있는
-    // 특히나, 한 번 발생하는 이벤트에 유용하다.
-    // 닭잡는데 소잡는 칼을 쓸 필요 없다!
-    // 1) async
-    // 원하는 함수를 비동기적으로 실행
-    // 2) promise
-    // 결과물을 promise를 통해 future로 받아줌
-    // 3) packaged_task
-    // 원하는 함수의 실행 결과를 packaged_task를 통해 future로 받아줌
+    //    //bool expected = false;
+    //    //bool desired = true;
+    //    //flag.compare_exchange_weak(expected, desired);//무조건 while 루프랑 사용하는게 좋음.
+    //    
+    //}
 }
