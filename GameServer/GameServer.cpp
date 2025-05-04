@@ -11,34 +11,39 @@
 #include "ConcurrentStack.h"
 
 LockQueue<int32> q;
-LockStack<int32> s;
+LockFreeStack<int32> s;
 
 void Push()
 {
     while (true)
     {
         int32 value = rand() % 100;
-        q.Push(value);
+        s.Push(value);
 
-        this_thread::sleep_for(100ms);
+        //this_thread::sleep_for(100ms);
     }
 }
 
 void Pop()
 {
     while (true) {
-        int32 data = 0;
-        q.WaitPop(OUT data);
-        cout << data << endl;
+        auto data = s.TryPop();
+        if (data != nullptr) cout << *data << endl;
     }
 }
 
 int main()
 {
+    shared_ptr<int32> ptr;
+    bool value = atomic_is_lock_free(&ptr);
+
     thread t1(Push);
     thread t2(Pop);
+    thread t3(Pop);
+
+
 
     t1.join();
     t2.join();
-
+    t3.join();
 }
