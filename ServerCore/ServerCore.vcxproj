@@ -161,7 +161,10 @@
     <ClInclude Include="pch.h" />
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     <ClInclude Include="RefCounting.h" />
@@ -185,7 +188,10 @@
     </ClCompile>
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     <ClCompile Include="RefCounting.cpp" />
