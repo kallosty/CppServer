@@ -7,9 +7,10 @@
 #include <windows.h>
 #include <chrono>
 #include <future>
-#include "CoreMacro.h"
-#include "ThreadManager.h"
+#include "ConcurrentQueue.h"
+#include "ConcurrentStack.h"
 
+<<<<<<< HEAD
 class TestLock
 {
     USE_LOCK;
@@ -62,11 +63,33 @@ void ThreadRead()
         int32 value = testLock.TestRead();
         cout << value << endl;
         this_thread::sleep_for(1ms);
+=======
+LockQueue<int32> q;
+LockFreeStack<int32> s;
+
+void Push()
+{
+    while (true)
+    {
+        int32 value = rand() % 100;
+        s.Push(value);
+
+        //this_thread::sleep_for(100ms);
+    }
+}
+
+void Pop()
+{
+    while (true) {
+        auto data = s.TryPop();
+        if (data != nullptr) cout << *data << endl;
+>>>>>>> parent of 36864ab (Thread_ThreadManager)
     }
 }
 
 int main()
 {
+<<<<<<< HEAD
     for (int32 i = 0; i < 2; i++)
     {
         GThreadManager->Launch(ThreadWrite);
@@ -76,6 +99,18 @@ int main()
     {
         GThreadManager->Launch(ThreadRead);
     }
+=======
+    shared_ptr<int32> ptr;
+    bool value = atomic_is_lock_free(&ptr);
+>>>>>>> parent of 36864ab (Thread_ThreadManager)
 
-    GThreadManager->Join();
+    thread t1(Push);
+    thread t2(Pop);
+    thread t3(Pop);
+
+
+
+    t1.join();
+    t2.join();
+    t3.join();
 }
