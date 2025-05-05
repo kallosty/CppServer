@@ -160,7 +160,10 @@
 >>>>>>> parent of 36864ab (Thread_ThreadManager)
     <ClInclude Include="pch.h" />
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
     <ClInclude Include="RefCounting.h" />
     <ClInclude Include="ThreadManager.h" />
 >>>>>>> Stashed changes
@@ -181,7 +184,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
     <ClCompile Include="RefCounting.cpp" />
     <ClCompile Include="ThreadManager.cpp" />
 >>>>>>> Stashed changes

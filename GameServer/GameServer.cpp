@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 #include <iostream>
 #include "CorePch.h"
 #include <thread>
@@ -13,6 +14,12 @@
 
 <<<<<<< HEAD
 class TestLock
+=======
+
+#include "RefCounting.h"
+
+class Wraight : public RefCountable
+>>>>>>> Stashed changes
 =======
 
 #include "RefCounting.h"
@@ -41,6 +48,7 @@ public:
     /*void Test(WraightRef& target)
     {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         int32 value = testLock.TestRead();
         cout << value << endl;
         this_thread::sleep_for(1ms);
@@ -56,8 +64,34 @@ void Push()
         s.Push(value);
 
         //this_thread::sleep_for(100ms);
+=======
+
+    }*/
+
+    bool Update()
+    {
+        if (_target == nullptr)
+            return true;
+
+        int posX = _target->_posX;
+        int posY = _target->_posY;
+
+        //TODO : 쫓아간다.
+        if (_target->_hp == 0)
+        {
+            _target->ReleaseRef();
+            _target = nullptr;
+            return true;
+        }
+
+        return false;
+>>>>>>> Stashed changes
     }
-}
+
+    WraightRef _target = nullptr;
+};
+
+using MissileRef = TSharedPtr<Missile>;
 
 void Pop()
 {
@@ -97,6 +131,7 @@ using MissileRef = TSharedPtr<Missile>;
 int main()
 {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< HEAD
     for (int32 i = 0; i < 2; i++)
     {
@@ -134,6 +169,20 @@ int main()
     //wraight->ReleaseRef();
     wraight = nullptr;
 
+=======
+    WraightRef wraight(new Wraight());
+    wraight->ReleaseRef();
+    MissileRef missile(new Missile());
+    missile->ReleaseRef();
+
+    missile->SetTarget(wraight);
+    // 레이스가 피격 당함
+    wraight->_hp = 0;
+    //delete wraight;
+    //wraight->ReleaseRef();
+    wraight = nullptr;
+
+>>>>>>> Stashed changes
     while (true)
     {
         if (missile)
@@ -149,5 +198,8 @@ int main()
     //delete missile;
     //missile->ReleaseRef();
     missile = nullptr;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
