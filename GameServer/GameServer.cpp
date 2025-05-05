@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+<<<<<<< Updated upstream
 #include <iostream>
 #include "CorePch.h"
 #include <thread>
@@ -12,54 +13,34 @@
 
 <<<<<<< HEAD
 class TestLock
-{
-    USE_LOCK;
+=======
 
+#include "RefCounting.h"
+
+class Wraight : public RefCountable
+>>>>>>> Stashed changes
+{
 public:
-    int32 TestRead()
-    {
-        READ_LOCK;
+    int _hp = 150;
+    int _posX = 0;
+    int _posY = 0;
+};
 
-        if (_queue.empty())
-            return -1;
+using WraightRef = TSharedPtr<Wraight>;
 
-        return _queue.front();
-    }
-
-    void TestPush()
-    {
-        WRITE_LOCK;
-
-        _queue.push(rand() % 100);
-    }
-
-    void TestPop()
-    {
-        WRITE_LOCK;
-
-        if (_queue.empty() == false)
-            _queue.pop();
-    }
-
-private:
-    queue<int32> _queue;
-} testLock;
-
-
-void ThreadWrite()
+class Missile : public RefCountable
 {
-    while (true)
+public:
+    void SetTarget(WraightRef target)
     {
-        testLock.TestPush();
-        this_thread::sleep_for(1ms);
-        testLock.TestPop();
+        _target = target;
+        //target->AddRef();
+        //Test(target);
     }
-}
 
-void ThreadRead()
-{
-    while (true)
+    /*void Test(WraightRef& target)
     {
+<<<<<<< Updated upstream
         int32 value = testLock.TestRead();
         cout << value << endl;
         this_thread::sleep_for(1ms);
@@ -84,11 +65,38 @@ void Pop()
         auto data = s.TryPop();
         if (data != nullptr) cout << *data << endl;
 >>>>>>> parent of 36864ab (Thread_ThreadManager)
+=======
+
+    }*/
+
+    bool Update()
+    {
+        if (_target == nullptr)
+            return true;
+
+        int posX = _target->_posX;
+        int posY = _target->_posY;
+
+        //TODO : 쫓아간다.
+        if (_target->_hp == 0)
+        {
+            _target->ReleaseRef();
+            _target = nullptr;
+            return true;
+        }
+
+        return false;
+>>>>>>> Stashed changes
     }
-}
+
+    WraightRef _target = nullptr;
+};
+
+using MissileRef = TSharedPtr<Missile>;
 
 int main()
 {
+<<<<<<< Updated upstream
 <<<<<<< HEAD
     for (int32 i = 0; i < 2; i++)
     {
@@ -113,4 +121,33 @@ int main()
     t1.join();
     t2.join();
     t3.join();
+=======
+    WraightRef wraight(new Wraight());
+    wraight->ReleaseRef();
+    MissileRef missile(new Missile());
+    missile->ReleaseRef();
+
+    missile->SetTarget(wraight);
+    // 레이스가 피격 당함
+    wraight->_hp = 0;
+    //delete wraight;
+    //wraight->ReleaseRef();
+    wraight = nullptr;
+
+    while (true)
+    {
+        if (missile)
+        {
+            if (missile->Update())
+            {
+                missile->ReleaseRef();
+                missile = nullptr;
+            }
+        }
+    }
+    
+    //delete missile;
+    //missile->ReleaseRef();
+    missile = nullptr;
+>>>>>>> Stashed changes
 }

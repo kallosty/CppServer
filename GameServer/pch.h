@@ -9,3 +9,15 @@
 #endif
 
 #include "CorePch.h"
+#include <iostream>
+
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <windows.h>
+#include <chrono>
+#include <future>
+#include "CoreMacro.h"
+#include "ThreadManager.h"
+#include "PlayerManager.h"
+#include "AccountManager.h"

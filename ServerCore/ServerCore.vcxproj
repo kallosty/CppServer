@@ -154,16 +154,23 @@
     <ClInclude Include="CorePch.h" />
 <<<<<<< HEAD
     <ClInclude Include="CoreTLS.h" />
+    <ClInclude Include="DeadLockProfiler.h" />
     <ClInclude Include="Lock.h" />
 =======
 >>>>>>> parent of 36864ab (Thread_ThreadManager)
     <ClInclude Include="pch.h" />
+<<<<<<< Updated upstream
+=======
+    <ClInclude Include="RefCounting.h" />
+    <ClInclude Include="ThreadManager.h" />
+>>>>>>> Stashed changes
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CorePch.cpp" />
 <<<<<<< HEAD
     <ClCompile Include="CoreTLS.cpp" />
+    <ClCompile Include="DeadLockProfiler.cpp" />
     <ClCompile Include="Lock.cpp" />
 =======
 >>>>>>> parent of 36864ab (Thread_ThreadManager)
@@ -173,6 +180,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+<<<<<<< Updated upstream
+=======
+    <ClCompile Include="RefCounting.cpp" />
+    <ClCompile Include="ThreadManager.cpp" />
+>>>>>>> Stashed changes
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
