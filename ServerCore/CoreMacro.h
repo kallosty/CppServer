@@ -13,6 +13,19 @@
 #define WRITE_LOCK_IDX(idx)		WriteLockGuard writeLockGuard_##idx(_locks[idx], typeid(this).name());
 #define WRITE_LOCK				WRITE_LOCK_IDX(0)
 
+
+///*------------------------
+//		Memory
+//------------------------*/
+//
+//#ifdef  _DEBUG
+//#define xAlloc(size)	PoolAllocator::Alloc(size)
+//#define xRelease(ptr)	PoolAllocator::Release(ptr)
+//#else
+//#define xAlloc(size)	StompAllocator::Alloc(size)
+//#define xRelease(ptr)	StompAllocator::Release(ptr)
+//#endif
+
 /*------------------------
 		Crash
 ------------------------*/
@@ -29,6 +42,6 @@
 	if(!(expr))							\
 	{									\
 		CRASH("ASSERT_CRASH");			\
-		__analysis_assume(expr)			\
+		__analysis_assume(expr);		\
 	}									\
 }									

@@ -19,5 +19,3 @@
 #include <future>
 #include "CoreMacro.h"
 #include "ThreadManager.h"
-#include "PlayerManager.h"
-#include "AccountManager.h"

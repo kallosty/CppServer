@@ -4,7 +4,7 @@
 #include "CoreGlobal.h"
 
 /*--------------------
-	ThreadManager
+	ThreadManager.cpp
 --------------------*/
 
 ThreadManager::ThreadManager()

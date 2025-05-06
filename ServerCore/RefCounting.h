@@ -1,7 +1,7 @@
 #pragma once
 
 /*---------------------------
-	RefCountable
+	RefCountable.h
 ---------------------------*/
 
 class RefCountable

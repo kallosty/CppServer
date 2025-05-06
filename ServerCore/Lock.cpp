@@ -2,6 +2,10 @@
 #include "Lock.h"
 #include "DeadLockProfiler.h"
 
+/*-------------------------
+	Lock.cpp
+-------------------------*/
+
 void Lock::WriteLock(const char* name)
 {
 #if _DEBUG

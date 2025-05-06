@@ -1,83 +1,73 @@
 ﻿#include "pch.h"
 
 #include "RefCounting.h"
+#include "Memory.h"
+#include "Allocator.h"
 
-class Wraight : public RefCountable
+using TL = TypeList<class Palyer, class Mage, class Knight, class Archer>;
+
+class Player
 {
 public:
-    int _hp = 150;
-    int _posX = 0;
-    int _posY = 0;
+    Player()
+    {
+        INIT_TL(Player);
+    }
+
+    virtual ~Player() {}
+
+    DECLARE_TL;
 };
 
-using WraightRef = TSharedPtr<Wraight>;
-
-class Missile : public RefCountable
+class Knight : public Player
 {
 public:
-    void SetTarget(WraightRef target)
-    {
-        _target = target;
-        //target->AddRef();
-        //Test(target);
-    }
-
-    /*void Test(WraightRef& target)
-    {
-
-    }*/
-
-    bool Update()
-    {
-        if (_target == nullptr)
-            return true;
-
-        int posX = _target->_posX;
-        int posY = _target->_posY;
-
-        //TODO : 쫓아간다.
-        if (_target->_hp == 0)
-        {
-            _target->ReleaseRef();
-            _target = nullptr;
-            return true;
-        }
-
-        return false;
-    }
-
-    WraightRef _target = nullptr;
+    Knight() { INIT_TL(Knight); }
 };
 
-using MissileRef = TSharedPtr<Missile>;
+class Mage : public Player
+{
+public:
+    Mage() { INIT_TL(Mage); }
+};
+
+class Archer : public Player
+{
+public:
+    Archer() { INIT_TL(Archer); }
+};
+
 
 int main()
 {
-    WraightRef wraight(new Wraight());
-    wraight->ReleaseRef();
-    MissileRef missile(new Missile());
-    missile->ReleaseRef();
-
-    missile->SetTarget(wraight);
-    // 레이스가 피격 당함
-    wraight->_hp = 0;
-    //delete wraight;
-    //wraight->ReleaseRef();
-    wraight = nullptr;
-
-    while (true)
     {
-        if (missile)
-        {
-            if (missile->Update())
-            {
-                missile->ReleaseRef();
-                missile = nullptr;
-            }
-        }
+        /*Player* player = new Player();
+
+        bool canCast = CanCast<Knight*>(player);
+        Knight* knight = TypeCast<Knight*>(player);
+
+
+
+        delete player;*/
     }
-    
-    //delete missile;
-    //missile->ReleaseRef();
-    missile = nullptr;
+
+    {
+        shared_ptr<Knight> knight = MakeShared<Knight>();
+
+        shared_ptr<Player> player = TypeCast<Player>(knight);
+        bool canCast = CanCast<Player>(knight);
+    }
+
+    for (int32 i = 0; i < 2; i++)
+    {
+        GThreadManager->Launch([]()
+            {
+                while (true)
+                {
+                    
+                }
+            });
+    }
+
+    GThreadManager->Join();
 }

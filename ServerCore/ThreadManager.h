@@ -4,7 +4,7 @@
 #include <functional>
 
 /*--------------------
-	ThreadManager
+	ThreadManager.h
 --------------------*/
 
 class ThreadManager
