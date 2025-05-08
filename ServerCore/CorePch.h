@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <Windows.h>
+#include <thread>
+#include <chrono>
 
 #include "Lock.h"
 #include "Allocator.h"

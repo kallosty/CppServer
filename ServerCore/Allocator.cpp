@@ -25,7 +25,9 @@ void* StompAllocator::Alloc(int32 size)
 
 	//언더플로우 잡아주기
 	const int64 dataOffset = pageCount * PAGE_SIZE - size;
-	void* baseAddress = ::VirtualAlloc(NULL, pageCount * PAGE_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	void* baseAddress = 
+		::VirtualAlloc(NULL, pageCount * PAGE_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
 	return static_cast<void*>(static_cast<int8*>(baseAddress) + dataOffset);
 }
 
@@ -37,7 +39,7 @@ void StompAllocator::Release(void* ptr)
 }
 
 /*---------------------
-	StompAllocator
+	PoolAllocator
 ---------------------*/
 
 void* PoolAllocator::Alloc(int32 size)

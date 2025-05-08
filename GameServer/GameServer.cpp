@@ -1,73 +1,89 @@
 ﻿#include "pch.h"
+#include "ThreadManager.h"
 
-#include "RefCounting.h"
-#include "Memory.h"
-#include "Allocator.h"
+#include <WinSock2.h>
+#include <MSWSock.h>
+#include <ws2tcpip.h>
 
-using TL = TypeList<class Palyer, class Mage, class Knight, class Archer>;
+#pragma comment(lib,"ws2_32.lib")
 
-class Player
-{
-public:
-    Player()
-    {
-        INIT_TL(Player);
-    }
-
-    virtual ~Player() {}
-
-    DECLARE_TL;
-};
-
-class Knight : public Player
-{
-public:
-    Knight() { INIT_TL(Knight); }
-};
-
-class Mage : public Player
-{
-public:
-    Mage() { INIT_TL(Mage); }
-};
-
-class Archer : public Player
-{
-public:
-    Archer() { INIT_TL(Archer); }
-};
-
+/*---------------------------
+	Server
+----------------------------*/
 
 int main()
 {
-    {
-        /*Player* player = new Player();
+	//윈속 초기화 (ws2_32 라이브러리 초기화)
+	//관련 정보가 wsaData에 채워짐
+	WSADATA wsaData;
+	if (::WSAStartup(MAKEWORD(2, 2), &wsaData))
+		return 0;
 
-        bool canCast = CanCast<Knight*>(player);
-        Knight* knight = TypeCast<Knight*>(player);
+	// ad : Address Family (AF_INET = IPv4, AF_INET6 = IPv6
+	// type : TCP(SOCK_STREAM) vs UDP(SOCK_DGRAM)
+	// protocol : 0
+	// return descriptor
+	SOCKET listenSocket = ::socket(AF_INET, SOCK_STREAM, 0);
+	if (listenSocket == INVALID_SOCKET)
+	{
+		int32 errCode = ::WSAGetLastError();
+		cout << "Socket ErrorCode : " << errCode << endl;
+		return 0;
+	}
+
+	// 나의 주소는?
+	SOCKADDR_IN serverAddr; // IPv4
+
+	::memset(&serverAddr, 0, sizeof(serverAddr));
+
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = ::htons(INADDR_ANY); // 니가 알아서 해줘
+	serverAddr.sin_port = ::htons(7777);
+
+	//안내원 폰 개통 ! 식당의 대표 번호
+	if (::bind(listenSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
+	{
+		int32 errCode = ::WSAGetLastError();
+		cout << "Socket ErrorCode : " << errCode << endl;
+		return 0;
+	}
+
+	// 영업 시작!
+	if (::listen(listenSocket, 10) == SOCKET_ERROR)
+	{
+		int32 errCode = ::WSAGetLastError();
+		cout << "Socket ErrorCode : " << errCode << endl;
+		return 0;
+	}
+
+	//---------------------------------------
+
+	while (true)
+	{
+		SOCKADDR_IN clientAddr;
+		::memset(&clientAddr, 0, sizeof(clientAddr));
+
+		int32 addrLen = sizeof(clientAddr);
+		SOCKET clientSocket = ::accept(listenSocket,(SOCKADDR*) &clientAddr, &addrLen);
+		if (clientSocket == INVALID_SOCKET)
+		{
+			int32 errCode = ::WSAGetLastError();
+			cout << "Socket ErrorCode : " << errCode << endl;
+			return 0;
+		}
 
 
+		//손님 입장!
+		char ipAddress[16];
+		::inet_ntop(AF_INET, &clientAddr.sin_addr, ipAddress, sizeof(ipAddress));
 
-        delete player;*/
-    }
+		cout << "Client Connected! IP = " << ipAddress << endl;
 
-    {
-        shared_ptr<Knight> knight = MakeShared<Knight>();
+		//TODO
+	}
 
-        shared_ptr<Player> player = TypeCast<Player>(knight);
-        bool canCast = CanCast<Player>(knight);
-    }
-
-    for (int32 i = 0; i < 2; i++)
-    {
-        GThreadManager->Launch([]()
-            {
-                while (true)
-                {
-                    
-                }
-            });
-    }
-
-    GThreadManager->Join();
+	//---------------------------------------
+	
+	// Winsock 종료
+	::WSACleanup();
 }
