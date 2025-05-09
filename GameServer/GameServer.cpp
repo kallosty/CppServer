@@ -17,6 +17,15 @@ void HandleError(const char* cause)
 	cout << "Send ErrorCode : " << errCode << endl;
 }
 
+const int32 BUFSIZE = 1000;
+struct Session
+{
+	SOCKET socket;
+	char recvBuffer[BUFSIZE] = {};
+	int32 recvBytes = 0;
+	int32 sendBytes = 0;
+};
+
 int main()
 {
 	WSADATA wsaData;
@@ -46,54 +55,79 @@ int main()
 
 	cout << "Accept" << endl;
 
-	SOCKADDR_IN clientAddr;
-	int32 addrLen = sizeof(clientAddr);
+	// Select 모델 = (select 함수가 핵심이 되는)
+	vector<Session> sessions;
+	sessions.reserve(100);
+
+	fd_set reads;
+	fd_set writes;
 
 	while (true)
 	{
-		SOCKET clientSocket = ::accept(listenSocket, (SOCKADDR*)&clientAddr, &addrLen);
-		if (clientSocket == INVALID_SOCKET)
-		{
-			if (::WSAGetLastError() == WSAEWOULDBLOCK)
-				continue;
+		FD_ZERO(&reads);
+		FD_ZERO(&writes);
+		
+		FD_SET(listenSocket, &reads);
 
-			break;
+		for (Session& s : sessions)
+		{
+			if (s.recvBytes <= s.sendBytes)
+				FD_SET(s.socket, &reads);
+			else
+				FD_SET(s.socket, &writes);
 		}
 
-		cout << "Client Connected!" << endl;
+		//[옵션] 마지막 timeout 인자 설정 가능
+		int32 retVal = ::select(0, &reads, &writes, nullptr, nullptr);
+		if (retVal == SOCKET_ERROR)
+			break;
 
-		// Recv
-		while (true)
+		//Listener 소켓 체크
+		if (FD_ISSET(listenSocket, &reads))
 		{
-			char recvBuffer[1000];
-			int32 recvLen = ::recv(clientSocket, recvBuffer, sizeof(recvBuffer), 0);
-			if (recvLen == SOCKET_ERROR)
+			SOCKADDR_IN clientAddr;
+			int32 addrLen = sizeof(clientAddr);
+			SOCKET clientSocket = ::accept(listenSocket, (SOCKADDR*)&clientSocket, &addrLen);
+			if (clientSocket != INVALID_SOCKET)
 			{
-				if (::WSAGetLastError() == WSAEWOULDBLOCK)
-					continue;
-
-				//ERROR
-				break;
+				cout << "Client Connected" << endl;
+				sessions.push_back(Session{ clientSocket });
 			}
-			else if (recvLen == 0)
-			{
-				break;
-			}
+		}
 
-			cout << "Recv Data Len = " << recvLen << endl;
-
-			// Send
-			while (true)
+		for (Session& s : sessions)
+		{
+			//Read Check
+			if (FD_ISSET(s.socket, &reads))
 			{
-				if (::send(clientSocket, recvBuffer, recvLen, 0) == SOCKET_ERROR)
+				int32 recvLen = ::recv(s.socket, s.recvBuffer, BUFSIZE, 0);
+				if (recvLen <= 0)
 				{
-					if (::WSAGetLastError() == WSAEWOULDBLOCK)
-						continue;
-
-					break;
+					//TODO : sessions 제거
+					continue;
 				}
 
-				cout << "Send Data ! Len = " << recvLen << endl;
+				s.recvBytes = recvLen;
+			}
+
+			//Write Check
+			if (FD_ISSET(s.socket, &writes))
+			{
+				// 블로킹 모드 -> 모든 데이터 다 보냄
+				// 논 블로킹 모드 -> 일부만 보낼 수 가 있음 (상대방 수신 버퍼 상황에 따라)
+				int32 sendLen = ::send(s.socket, &s.recvBuffer[s.sendBytes], s.recvBytes - s.sendBytes, 0);
+				if (sendLen == SOCKET_ERROR)
+				{
+					//TODO : sessions 제거
+					continue;
+				}
+
+				s.sendBytes += sendLen;
+				if (s.recvBytes == s.sendBytes)
+				{
+					s.recvBytes = 0;
+					s.sendBytes = 0;
+				}
 			}
 		}
 	}
